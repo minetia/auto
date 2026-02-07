@@ -1,31 +1,50 @@
-// API 설정 - CORS 프록시 사용
+// API 설정 - CORS 프록시 변경
 const API_CONFIG = {
-    // CORS 프록시 서비스 (무료)
-    CORS_PROXY: 'https://cors.isomorphic-git.org/',
-    // 또는
-    CORS_PROXY_2: 'https://api.allorigins.win/raw?url=',
+    // CORS 프록시 서비스 (여러 개 백업)
+    CORS_PROXY_1: 'https://api.allorigins.win/raw?url=',
+    CORS_PROXY_2: 'https://corsninja.herokuapp.com/',
+    CORS_PROXY_3: 'https://thingproxy.freeboard.io/fetch/',
     
     UPBIT_BASE: 'https://api.upbit.com/v1',
     COINGECKO_BASE: 'https://api.coingecko.com/api/v3',
 };
+
+// 현재 사용할 프록시 선택
+let currentProxy = API_CONFIG.CORS_PROXY_1;
 
 // Upbit API 호출 (CORS 프록시 사용)
 class UpbitAPI {
     static async getTicker(market) {
         try {
             const url = `${API_CONFIG.UPBIT_BASE}/ticker?markets=${market}`;
-            const proxiedUrl = `${API_CONFIG.CORS_PROXY_2}${encodeURIComponent(url)}`;
+            const proxiedUrl = `${currentProxy}${encodeURIComponent(url)}`;
             
-            const response = await fetch(proxiedUrl);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            console.log(`🔗 API 호출: ${market}`);
+            
+            const response = await fetch(proxiedUrl, {
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'Mozilla/5.0'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
             
             const data = await response.json();
             console.log('✅ Ticker 데이터 로드:', market);
             return data;
         } catch (error) {
-            console.error('❌ Upbit Ticker API 오류:', error);
+            console.error('❌ Upbit Ticker API 오류:', error.message);
             
-            // 폴백: 로컬 데이터 사용
+            // 프록시 변경 후 재시도
+            if (currentProxy === API_CONFIG.CORS_PROXY_1) {
+                console.log('🔄 프록시 변경 중...');
+                currentProxy = API_CONFIG.CORS_PROXY_3;
+                return UpbitAPI.getMockData(market);
+            }
+            
             return UpbitAPI.getMockData(market);
         }
     }
@@ -33,16 +52,26 @@ class UpbitAPI {
     static async getCandles(market, unit = 'minutes60', count = 200) {
         try {
             const url = `${API_CONFIG.UPBIT_BASE}/candles/${unit}?market=${market}&count=${count}`;
-            const proxiedUrl = `${API_CONFIG.CORS_PROXY_2}${encodeURIComponent(url)}`;
+            const proxiedUrl = `${currentProxy}${encodeURIComponent(url)}`;
             
-            const response = await fetch(proxiedUrl);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            console.log(`📊 Candles 호출: ${market} ${unit}`);
+            
+            const response = await fetch(proxiedUrl, {
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'Mozilla/5.0'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
             
             const data = await response.json();
             console.log(`✅ Candles 데이터 로드: ${market} ${unit}`);
             return data;
         } catch (error) {
-            console.error('❌ Candles API 오류:', error);
+            console.error('❌ Candles API 오류:', error.message);
             return UpbitAPI.getMockCandles(market, count);
         }
     }
@@ -50,7 +79,7 @@ class UpbitAPI {
     static async getOrderbook(market) {
         try {
             const url = `${API_CONFIG.UPBIT_BASE}/orderbook?markets=${market}`;
-            const proxiedUrl = `${API_CONFIG.CORS_PROXY_2}${encodeURIComponent(url)}`;
+            const proxiedUrl = `${currentProxy}${encodeURIComponent(url)}`;
             
             const response = await fetch(proxiedUrl);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -64,7 +93,7 @@ class UpbitAPI {
     static async getTrades(market, count = 50) {
         try {
             const url = `${API_CONFIG.UPBIT_BASE}/trades/ticks?market=${market}&count=${count}`;
-            const proxiedUrl = `${API_CONFIG.CORS_PROXY_2}${encodeURIComponent(url)}`;
+            const proxiedUrl = `${currentProxy}${encodeURIComponent(url)}`;
             
             const response = await fetch(proxiedUrl);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -87,7 +116,8 @@ class UpbitAPI {
         };
 
         const basePrice = mockPrices[market] || 1000000;
-        const change = (Math.random() - 0.5) * 0.05; // ±5% 변화
+        const change = (Math.random() - 0.5) * 0.05;
+        const changePrice = Math.floor(basePrice * change);
 
         return [{
             market: market,
@@ -98,7 +128,7 @@ class UpbitAPI {
             high_price: Math.floor(basePrice * 1.02),
             low_price: Math.floor(basePrice * 0.98),
             change_rate: change,
-            change_price: Math.floor(basePrice * change),
+            change_price: changePrice,
             acc_trade_volume: Math.random() * 1e8,
             timestamp: new Date().toISOString()
         }];
@@ -106,8 +136,16 @@ class UpbitAPI {
 
     static getMockCandles(market, count) {
         const candles = [];
-        const basePrice = { 'KRW-BTC': 45000000, 'KRW-ETH': 2500000 }[market] || 1000000;
-        
+        const basePrices = {
+            'KRW-BTC': 45000000,
+            'KRW-ETH': 2500000,
+            'KRW-ADA': 750,
+            'KRW-SOL': 120000,
+            'KRW-DOGE': 500,
+            'KRW-XRP': 700,
+        };
+
+        const basePrice = basePrices[market] || 1000000;
         let currentPrice = basePrice;
         const now = new Date();
 
@@ -119,10 +157,10 @@ class UpbitAPI {
             const candle = {
                 market: market,
                 candle_date_time_kst: new Date(now - i * 60 * 60 * 1000).toISOString().split('.')[0],
-                opening_price: openPrice,
-                high_price: Math.max(openPrice, closePrice) * 1.01,
-                low_price: Math.min(openPrice, closePrice) * 0.99,
-                trade_price: closePrice,
+                opening_price: Math.floor(openPrice),
+                high_price: Math.floor(Math.max(openPrice, closePrice) * 1.01),
+                low_price: Math.floor(Math.min(openPrice, closePrice) * 0.99),
+                trade_price: Math.floor(closePrice),
                 candle_acc_trade_volume: Math.random() * 1000,
                 candle_acc_trade_price: Math.random() * 1e12,
             };
@@ -150,7 +188,7 @@ class CoinGeckoAPI {
         try {
             const coinId = this.coinMap[coinName] || coinName.toLowerCase();
             const url = `${API_CONFIG.COINGECKO_BASE}/coins/${coinId}/market_chart?vs_currency=krw&days=${days}&interval=hourly`;
-            const proxiedUrl = `${API_CONFIG.CORS_PROXY_2}${encodeURIComponent(url)}`;
+            const proxiedUrl = `${currentProxy}${encodeURIComponent(url)}`;
             
             const response = await fetch(proxiedUrl);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -168,7 +206,7 @@ class CoinGeckoAPI {
         try {
             const ids = coinNames.map(name => this.coinMap[name] || name.toLowerCase()).join(',');
             const url = `${API_CONFIG.COINGECKO_BASE}/simple/price?ids=${ids}&vs_currencies=krw&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true`;
-            const proxiedUrl = `${API_CONFIG.CORS_PROXY_2}${encodeURIComponent(url)}`;
+            const proxiedUrl = `${currentProxy}${encodeURIComponent(url)}`;
             
             const response = await fetch(proxiedUrl);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -191,7 +229,7 @@ class CoinGeckoAPI {
             const change = (Math.random() - 0.5) * 0.02;
             prices.push([
                 now - i * 60 * 60 * 1000,
-                basePrice * (1 + change)
+                Math.floor(basePrice * (1 + change))
             ]);
         }
 
@@ -215,10 +253,10 @@ class CoinGeckoAPI {
             const change = (Math.random() - 0.5) * 0.1;
 
             data[coinId] = {
-                krw: basePrice * (1 + change),
-                krw_market_cap: basePrice * 1e9,
-                krw_24h_vol: Math.random() * 1e15,
-                krw_24h_change: change * 100
+                krw: Math.floor(basePrice * (1 + change)),
+                krw_market_cap: Math.floor(basePrice * 1e9),
+                krw_24h_vol: Math.floor(Math.random() * 1e15),
+                krw_24h_change: Math.round(change * 100 * 100) / 100
             };
         });
 
