@@ -1,5 +1,5 @@
 // =====================
-// NEXUS TRADE - AI 암호화폐 자동매매 시뮬레이터 (Real API + KST Ver)
+// NEXUS TRADE - AI 암호화폐 자동매매 시뮬레이터 (기능 강화판)
 // =====================
 
 class CryptoSimulator {
@@ -12,81 +12,59 @@ class CryptoSimulator {
         this.selectedStrategy = 'ensemble';
         this.strategySignals = [];
         
-        // 기준 시간 설정: 2026년 2월 11일 (KST)
+        // 기준 시간: 2026년 2월 11일 (KST)
         this.simulationDate = new Date('2026-02-11T21:00:00+09:00');
     }
 
-    // [핵심] 실제 코인 가격 가져오기 (CoinGecko API)
+    // 실제 코인 가격 가져오기 (API)
     async fetchRealPrice(coinSymbol) {
-        const symbolMap = {
-            'BTC': 'bitcoin',
-            'ETH': 'ethereum',
-            'SOL': 'solana',
-            'XRP': 'ripple',
-            'ZRX': '0x'
-        };
+        const symbolMap = { 'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'XRP': 'ripple', 'ZRX': '0x' };
         const coinId = symbolMap[coinSymbol] || 'bitcoin';
-        
         try {
             const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`);
             const data = await response.json();
             return data[coinId].usd;
         } catch (error) {
-            console.warn("API 호출 실패, 기본값 사용:", error);
-            // API 실패 시 현실적인 2026년 예상 가격 백업
+            console.warn("API 오류, 기본값 사용");
             if(coinSymbol === 'BTC') return 96500;
             if(coinSymbol === 'ETH') return 3400;
             if(coinSymbol === 'SOL') return 180;
-            if(coinSymbol === 'XRP') return 2.5;
-            if(coinSymbol === 'ZRX') return 0.8;
             return 50000;
         }
     }
 
-    // 데이터 생성 (실제 가격 기반 + 2026년 날짜 적용)
+    // 데이터 생성 (과거 데이터 역산)
     async generatePriceData(days, coinSymbol) {
-        // 1. 현재 실제 가격 가져오기
         const currentRealPrice = await this.fetchRealPrice(coinSymbol);
-        
         this.priceData = [];
-        let price = currentRealPrice; // 현재가를 끝점으로 설정하기 위해 역산하거나, 시작점으로 설정
+        let price = currentRealPrice;
         
-        // 변동성 설정
         let volatility = 0.03; 
         if(coinSymbol === 'SOL') volatility = 0.05;
         if(coinSymbol === 'ZRX') volatility = 0.06;
         if(coinSymbol === 'XRP') volatility = 0.04;
         
-        // 과거 데이터를 생성하기 위해 역방향 루프 (현재 -> 과거)
-        // 시뮬레이션의 '끝'이 2026-02-11이 되도록 설정
+        const drift = 0.0002;
+
         for (let i = 0; i < days * 24; i++) {
-            // 랜덤 워크 (Geometric Brownian Motion)
             const randomChange = (Math.random() - 0.5) * 2 * volatility;
-            const change = randomChange * 0.5; // 변동폭 조절
+            const change = randomChange * 0.5; 
             
-            // 과거 가격 추산 (현재가에서 역산)
             price = price / (1 + change); 
             price = Math.max(price, 0.1);
 
-            // 시간: 2026-02-11 기준에서 1시간씩 뺌
             const timePoint = new Date(this.simulationDate.getTime() - i * 3600000);
 
-            this.priceData.unshift({ // 배열 앞에 추가 (과거 -> 현재 순서 맞춤)
+            this.priceData.unshift({
                 timestamp: timePoint,
-                close: price * (1 + change), // 다시 원복하여 저장
-                high: price * (1 + volatility/2),
-                low: price * (1 - volatility/2)
+                close: price * (1 + change),
             });
         }
-        
-        // 마지막 데이터 포인트는 정확히 현재가로 보정
         this.priceData[this.priceData.length - 1].close = currentRealPrice;
-        
         return this.priceData;
     }
 
-    // --- 전략 로직 (기존과 동일하지만 데이터 기반으로 작동) ---
-
+    // --- 전략 로직 ---
     strategySMA() {
         const signals = [];
         const prices = this.priceData.map(p => p.close);
@@ -95,23 +73,9 @@ class CryptoSimulator {
 
         for (let i = 1; i < this.priceData.length; i++) {
             if (fastSMA[i] && slowSMA[i] && fastSMA[i-1] && slowSMA[i-1]) {
-                if (fastSMA[i] > slowSMA[i] && fastSMA[i-1] <= slowSMA[i-1]) {
-                    signals.push({ index: i, signal: 'BUY' });
-                } else if (fastSMA[i] < slowSMA[i] && fastSMA[i-1] >= slowSMA[i-1]) {
-                    signals.push({ index: i, signal: 'SELL' });
-                }
+                if (fastSMA[i] > slowSMA[i] && fastSMA[i-1] <= slowSMA[i-1]) signals.push({ index: i, signal: 'BUY' });
+                else if (fastSMA[i] < slowSMA[i] && fastSMA[i-1] >= slowSMA[i-1]) signals.push({ index: i, signal: 'SELL' });
             }
-        }
-        return signals;
-    }
-
-    strategyRSI() { // RSI 로직 추가
-        const signals = [];
-        const prices = this.priceData.map(p => p.close);
-        const rsi = this.calculateRSI(prices, 14);
-        for(let i=1; i<rsi.length; i++) {
-            if(rsi[i] < 30 && rsi[i-1] >= 30) signals.push({ index: i, signal: 'BUY' });
-            else if(rsi[i] > 70 && rsi[i-1] <= 70) signals.push({ index: i, signal: 'SELL' });
         }
         return signals;
     }
@@ -133,38 +97,16 @@ class CryptoSimulator {
     strategyEnsemble() {
         const sma = this.strategySMA();
         const bb = this.strategyBollingerBands();
-        const rsi = this.strategyRSI();
-        return [...sma, ...bb, ...rsi].sort((a, b) => a.index - b.index);
+        return [...sma, ...bb].sort((a, b) => a.index - b.index);
     }
 
-    // --- 지표 계산 함수 ---
     calculateSMA(prices, period) {
         const sma = [];
         for (let i = 0; i < prices.length; i++) {
             if (i < period - 1) sma.push(null);
-            else {
-                const sum = prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
-                sma.push(sum / period);
-            }
+            else sma.push(prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period);
         }
         return sma;
-    }
-    
-    calculateRSI(prices, period) {
-        const rsi = [];
-        const changes = [];
-        for(let i=1; i<prices.length; i++) changes.push(prices[i]-prices[i-1]);
-        
-        // 간단한 RSI 계산
-        for(let i=0; i<prices.length; i++) {
-            if(i < period) { rsi.push(50); continue; }
-            const slice = changes.slice(i-period, i);
-            const gains = slice.filter(x => x > 0).reduce((a,b)=>a+b, 0);
-            const losses = Math.abs(slice.filter(x => x < 0).reduce((a,b)=>a+b, 0));
-            const rs = losses === 0 ? 100 : gains/losses;
-            rsi.push(100 - (100/(1+rs)));
-        }
-        return rsi;
     }
 
     calculateBollingerBands(prices, period, stdDev) {
@@ -180,7 +122,7 @@ class CryptoSimulator {
         return bands;
     }
 
-    // 백테스팅
+    // 백테스팅 엔진
     backtest(initialBalance, stopLoss, takeProfit, riskPerTrade) {
         this.balance = initialBalance;
         this.holdings = 0;
@@ -189,7 +131,6 @@ class CryptoSimulator {
         
         if (this.selectedStrategy === 'sma') this.strategySignals = this.strategySMA();
         else if (this.selectedStrategy === 'bb') this.strategySignals = this.strategyBollingerBands();
-        else if (this.selectedStrategy === 'rsi') this.strategySignals = this.strategyRSI();
         else this.strategySignals = this.strategyEnsemble();
 
         let entryPrice = null;
@@ -198,7 +139,6 @@ class CryptoSimulator {
             const currentPrice = this.priceData[i].close;
             const signal = this.strategySignals.find(s => s.index === i);
 
-            // 매도 체크
             if (this.holdings > 0 && entryPrice) {
                 const profitPct = ((currentPrice - entryPrice) / entryPrice) * 100;
                 let reason = '';
@@ -212,7 +152,6 @@ class CryptoSimulator {
                     entryPrice = null;
                 }
             } 
-            // 매수 체크
             else if (this.holdings === 0 && signal && signal.signal === 'BUY') {
                 const investAmount = (this.balance * riskPerTrade) / 100;
                 this.holdings = investAmount / currentPrice;
@@ -229,7 +168,6 @@ class CryptoSimulator {
             this.equity.push(this.balance + (this.holdings * currentPrice));
         }
         
-        // 마지막 강제 청산
         if(this.holdings > 0) {
             this.executeSell(this.priceData.length-1, this.priceData[this.priceData.length-1].close, '종료 청산');
         }
@@ -273,13 +211,13 @@ class CryptoSimulator {
             totalTrades: sells.length,
             winRate: sells.length > 0 ? (wins / sells.length) * 100 : 0,
             maxDrawdown,
-            profitFactor: 1.5 // 단순화
+            profitFactor: 1.5
         };
     }
 }
 
 // =====================
-// UI 컨트롤러 (KST 시간 + 안전장치)
+// UI 컨트롤러
 // =====================
 class SimulatorUI {
     constructor() {
@@ -289,16 +227,31 @@ class SimulatorUI {
     }
 
     init() {
+        // 버튼 이벤트
         const runBtn = document.getElementById('runBtn');
         if(runBtn) runBtn.addEventListener('click', () => this.runSimulation());
         const resetBtn = document.getElementById('resetBtn');
         if(resetBtn) resetBtn.addEventListener('click', () => this.reset());
 
+        // 전략 선택
         document.querySelectorAll('.strategy-card').forEach(card => {
             card.addEventListener('click', (e) => {
                 document.querySelectorAll('.strategy-card').forEach(c => c.classList.remove('active'));
                 e.currentTarget.classList.add('active');
                 this.simulator.selectedStrategy = e.currentTarget.dataset.strategy;
+            });
+        });
+
+        // [기능 추가] 필터 버튼 이벤트 (전체/매수/매도)
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // 활성 상태 변경
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                // 필터링 실행
+                const filterType = e.target.dataset.filter; // 'all', 'buy', 'sell'
+                this.filterTrades(filterType);
             });
         });
 
@@ -316,14 +269,9 @@ class SimulatorUI {
             options: { 
                 responsive: true, 
                 maintainAspectRatio: false,
-                plugins: {
-                    tooltip: {
-                        intersect: false,
-                        mode: 'index',
-                    }
-                },
+                plugins: { tooltip: { intersect: false, mode: 'index' } },
                 scales: {
-                    x: { ticks: { maxTicksLimit: 8, color: '#aaa' } },
+                    x: { ticks: { maxTicksLimit: 6, color: '#aaa' } },
                     y: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.05)' } }
                 }
             }
@@ -334,11 +282,15 @@ class SimulatorUI {
         const runBtn = document.getElementById('runBtn');
         const spinner = document.getElementById('loadingSpinner');
         
-        if(runBtn) runBtn.disabled = true;
+        // [기능 추가] 시뮬레이션 상태 표시
+        if(runBtn) {
+            runBtn.disabled = true;
+            runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI 분석 및 매매 중...'; // 버튼 텍스트 변경
+        }
         if(spinner) spinner.classList.remove('hidden');
 
         try {
-            // 사용자 입력값
+            // 입력값
             const balance = parseFloat(document.getElementById('initialBalance')?.value || 10000);
             const period = parseInt(document.getElementById('period')?.value || 30);
             const coin = document.getElementById('cryptoSelect')?.value || 'BTC';
@@ -346,8 +298,8 @@ class SimulatorUI {
             const sl = parseFloat(document.getElementById('stopLoss')?.value || 5);
             const tp = parseFloat(document.getElementById('takeProfit')?.value || 10);
 
-            // API 호출 및 데이터 생성 (대기 시간 1.5초 포함)
-            await new Promise(r => setTimeout(r, 1500));
+            // API 호출 및 분석 (2초 대기 연출)
+            await new Promise(r => setTimeout(r, 2000));
             await this.simulator.generatePriceData(period, coin);
             
             const metrics = this.simulator.backtest(balance, sl, tp, risk);
@@ -355,26 +307,26 @@ class SimulatorUI {
             this.updateChart();
             this.displayResults(metrics);
             this.displayTrades();
-            this.showToast("2026-02-11 기준 시뮬레이션 완료", "success");
+            this.showToast("시뮬레이션이 완료되었습니다.", "success");
 
         } catch (e) {
             console.error(e);
             this.showToast("오류: " + e.message, "error");
         } finally {
-            if(runBtn) runBtn.disabled = false;
+            // 상태 복구
+            if(runBtn) {
+                runBtn.disabled = false;
+                runBtn.innerHTML = '<i class="fas fa-rocket"></i> 시뮬레이션 시작';
+            }
             if(spinner) spinner.classList.add('hidden');
         }
     }
 
-    // [핵심] 차트 시간축을 한국 시간으로 표시
     updateChart() {
         if(!this.chart) return;
         const prices = this.simulator.priceData.map(p => p.close);
-        
-        // 날짜 포맷팅 (KST)
         const labels = this.simulator.priceData.map(p => {
             return new Intl.DateTimeFormat('ko-KR', {
-                timeZone: 'Asia/Seoul',
                 month: 'numeric', day: 'numeric', hour: 'numeric'
             }).format(p.timestamp);
         });
@@ -400,26 +352,36 @@ class SimulatorUI {
         }
     }
 
-    // [핵심] 거래 기록 시간을 한국 시간으로 표시
+    // [기능 추가] 거래 내역 표시 (필터링 및 상세 날짜)
     displayTrades() {
         const list = document.getElementById('tradesList');
         if(!list) return;
         list.innerHTML = '';
         
+        // 현재 선택된 필터 확인 ('active' 클래스가 있는 버튼의 data-filter 값)
+        const activeBtn = document.querySelector('.filter-btn.active');
+        const filterType = activeBtn ? activeBtn.dataset.filter : 'all';
+
         [...this.simulator.trades].reverse().forEach(t => {
+            // 필터링 로직: 선택된 필터와 거래 타입이 다르면 건너뜀
+            if (filterType !== 'all') {
+                if (filterType === 'buy' && t.type !== 'BUY') return;
+                if (filterType === 'sell' && t.type !== 'SELL') return;
+            }
+
             const item = document.createElement('div');
-            item.className = 'trade-item';
+            // 필터링을 위한 클래스 추가 (buy/sell)
+            item.className = `trade-item ${t.type.toLowerCase()}`; 
             item.style.padding = '12px';
             item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
             item.style.display = 'flex';
             item.style.justifyContent = 'space-between';
             item.style.fontSize = '13px';
             
-            // 시간 변환 (KST)
+            // [기능 추가] 날짜/시간 정밀 표시
             const timeStr = new Intl.DateTimeFormat('ko-KR', {
-                timeZone: 'Asia/Seoul',
-                month: 'numeric', day: 'numeric', 
-                hour: '2-digit', minute: '2-digit'
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', hour12: false
             }).format(t.time);
 
             if(t.type === 'BUY') {
@@ -439,6 +401,17 @@ class SimulatorUI {
             }
             list.appendChild(item);
         });
+        
+        // 거래가 없을 경우
+        if(list.children.length === 0) {
+            list.innerHTML = '<div style="padding:20px; text-align:center; color:#aaa;">조건에 맞는 거래 내역이 없습니다.</div>';
+        }
+    }
+
+    // [기능 추가] 필터 버튼 클릭 시 호출되는 함수
+    filterTrades(type) {
+        // displayTrades를 다시 호출하면 현재 필터 상태(active class)를 읽어서 다시 그립니다.
+        this.displayTrades();
     }
 
     showToast(msg, type) {
