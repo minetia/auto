@@ -1,70 +1,64 @@
-/* 기본 초기화 */
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body { background-color: #050812; color: #ffffff; font-family: 'Suit', sans-serif; padding-bottom: 30px; }
+/* 전체 초기화 */
+* { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
+body { background-color: #0b0e14; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 15px; padding-bottom: 50px; }
 
 /* 레이아웃 */
-.app-container { max-width: 600px; margin: 0 auto; padding: 15px; }
+.app-container { max-width: 600px; margin: 0 auto; }
 
 /* 헤더 */
-header { margin-bottom: 20px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.brand { display: flex; align-items: center; gap: 15px; }
-.brand i { font-size: 28px; color: #667eea; }
-.brand h1 { font-size: 20px; font-weight: 800; background: linear-gradient(to right, #fff, #aaa); -webkit-background-clip: text; color: transparent; margin: 0; }
-.status-badge { font-size: 11px; color: #38ef7d; font-weight: bold; display: block; margin-top: 3px; }
+header { display: flex; align-items: center; margin-bottom: 20px; padding: 10px 0; border-bottom: 1px solid #2a2e3b; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand i { font-size: 24px; color: #7c4dff; }
+.brand h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+.status-badge { font-size: 11px; background: rgba(56, 239, 125, 0.1); color: #38ef7d; padding: 4px 8px; border-radius: 12px; margin-left: 10px; display: flex; align-items: center; gap: 5px; }
+.pulse { width: 6px; height: 6px; background: #38ef7d; border-radius: 50%; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
-/* 카드 스타일 */
-.control-card, .result-card { background: #121629; border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+/* 카드 공통 */
+.card { background: #161b28; border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid #2a2e3b; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 
-/* 입력 그룹 (깨짐 방지 핵심: block 처리) */
-.section-title { font-size: 14px; color: #667eea; font-weight: bold; margin-bottom: 15px; margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+/* 입력 폼 */
 .input-group { margin-bottom: 15px; }
-.input-group label { display: block; font-size: 12px; color: #aaa; margin-bottom: 8px; }
-.input-group input, .input-group select {
-    width: 100%; height: 45px; background: #0a0e27; border: 1px solid #2d3554;
-    border-radius: 8px; color: white; padding: 0 15px; font-size: 14px; outline: none;
-    transition: 0.2s;
-}
-.input-group input:focus { border-color: #667eea; }
+.input-group label { display: block; color: #8b9bb4; font-size: 12px; margin-bottom: 6px; font-weight: 600; }
+.input-group input, .input-group select { width: 100%; height: 48px; background: #0b0e14; border: 1px solid #2a2e3b; border-radius: 10px; color: white; padding: 0 15px; font-size: 15px; transition: 0.2s; }
+.input-group input:focus, .input-group select:focus { border-color: #7c4dff; }
 
-/* 가로 배치 (5:5) */
-.row-group { display: flex; gap: 10px; }
-.input-group.half { flex: 1; }
+.row { display: flex; gap: 10px; }
+.col { flex: 1; }
 
-/* 전략 버튼 그리드 */
-.strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-.strategy-btn {
-    background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;
-    text-align: center; font-size: 12px; cursor: pointer; border: 1px solid transparent; transition: 0.2s;
-}
-.strategy-btn.active { background: rgba(102, 126, 234, 0.2); border-color: #667eea; color: #667eea; font-weight: bold; }
+/* 전략 버튼 */
+.strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+.strategy-btn { background: #1f2536; padding: 12px; border-radius: 10px; text-align: center; font-size: 13px; color: #8b9bb4; cursor: pointer; border: 1px solid transparent; transition: 0.2s; font-weight: 600; }
+.strategy-btn.active { background: rgba(124, 77, 255, 0.15); border-color: #7c4dff; color: #7c4dff; }
 
-/* 액션 버튼 */
-.action-buttons { display: flex; gap: 10px; margin-top: 25px; }
-.btn-primary { flex: 2; height: 50px; background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 10px; color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
-.btn-secondary { flex: 1; height: 50px; background: transparent; border: 1px solid #2d3554; border-radius: 10px; color: #aaa; cursor: pointer; }
+/* 실행 버튼 */
+.btn-primary { width: 100%; height: 54px; background: linear-gradient(135deg, #7c4dff, #448aff); border: none; border-radius: 12px; color: white; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(124, 77, 255, 0.3); transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* 차트 및 통계 */
-.chart-area { height: 250px; margin-bottom: 20px; }
+/* 결과 영역 */
+.chart-container { height: 220px; margin-bottom: 20px; }
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-.stat-box { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; text-align: center; }
-.stat-box span { font-size: 11px; color: #888; display: block; margin-bottom: 5px; }
-.stat-box h3 { margin: 0; font-size: 16px; color: #fff; }
+.stat-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; text-align: center; }
+.stat-box span { font-size: 11px; color: #8b9bb4; display: block; margin-bottom: 4px; }
+.stat-box h3 { font-size: 16px; margin: 0; color: #fff; font-family: 'Roboto Mono', monospace; }
 
 /* 매매 기록 */
-.trades-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-.filter-tabs { display: flex; gap: 5px; background: #0a0e27; padding: 3px; border-radius: 8px; }
-.tab { background: none; border: none; color: #888; padding: 5px 10px; font-size: 11px; border-radius: 6px; cursor: pointer; }
-.tab.active { background: #2d3554; color: white; }
+.trades-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #2a2e3b; }
+.trades-header h4 { font-size: 14px; color: #fff; }
+.badge { font-size: 11px; background: #2a2e3b; padding: 2px 8px; border-radius: 10px; color: #aaa; }
 .trades-list { max-height: 300px; overflow-y: auto; }
-.trade-item { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; font-size: 13px; }
-.empty-msg { text-align: center; padding: 20px; color: #555; font-size: 13px; }
+.trade-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 13px; animation: fadeIn 0.3s ease; }
+.trade-left { display: flex; flex-direction: column; gap: 2px; }
+.trade-date { font-size: 11px; color: #666; }
+.trade-right { text-align: right; }
+.empty-state { text-align: center; padding: 40px 0; color: #555; }
+.empty-state i { font-size: 32px; margin-bottom: 10px; opacity: 0.5; }
 
-/* 로딩 */
-.loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; backdrop-filter: blur(5px); }
-.spinner { width: 40px; height: 40px; border: 4px solid #2d3554; border-top-color: #667eea; border-radius: 50%; animation: spin 1s infinite linear; margin-bottom: 15px; }
+/* 로딩 오버레이 */
+.overlay { position: fixed; inset: 0; background: rgba(11, 14, 20, 0.95); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); transition: opacity 0.3s; }
+.overlay.hidden { opacity: 0; pointer-events: none; }
+.loader-content { text-align: center; }
+.spinner { width: 50px; height: 50px; border: 4px solid #2a2e3b; border-top-color: #7c4dff; border-radius: 50%; animation: spin 1s infinite linear; margin: 0 auto 20px; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.hidden { display: none; }
-
-/* 토스트 */
-.toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 1000; }
-.toast.show { opacity: 1; bottom: 50px; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
