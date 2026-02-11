@@ -9,7 +9,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 </head>
 <body>
-    <!-- 배경 애니메이션 -->
     <div class="background-animation">
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
@@ -18,7 +17,6 @@
     </div>
 
     <div class="container">
-        <!-- 헤더 -->
         <header class="premium-header">
             <div class="header-content">
                 <div class="logo-section">
@@ -27,255 +25,204 @@
                     </div>
                     <div class="logo-text">
                         <h1>NEXUS TRADE</h1>
-                        <p>AI-Powered Crypto Trading Simulator</p>
+                        <p>AI 기반 암호화폐 트레이딩 시뮬레이터</p>
                     </div>
                 </div>
                 <div class="header-stats">
                     <div class="stat-item">
-                        <span class="stat-label">Global Traders</span>
+                        <span class="stat-label">활성 트레이더</span>
                         <span class="stat-value">24.5K</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Total Simulations</span>
+                        <span class="stat-label">누적 시뮬레이션</span>
                         <span class="stat-value">1.2M</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Avg. Return</span>
-                        <span class="stat-value">+24.8%</span>
+                        <span class="stat-label">평균 수익률</span>
+                        <span class="stat-value" style="color:var(--success)">+24.8%</span>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- 메인 콘텐츠 -->
         <div class="main-content">
-            <!-- 좌측 패널 -->
             <aside class="control-panel">
-                <!-- 프로필 섹션 -->
                 <div class="profile-section">
                     <div class="profile-avatar">
-                        <i class="fas fa-user-circle"></i>
+                        <i class="fas fa-user-astronaut"></i>
                     </div>
                     <div class="profile-info">
-                        <h3>Trader Profile</h3>
-                        <p>Simulation Mode</p>
+                        <h3>최송학 (주군)</h3>
+                        <p>Premium Trader</p>
                     </div>
                 </div>
 
-                <!-- 설정 섹션 -->
                 <div class="settings-section">
                     <div class="section-header">
                         <i class="fas fa-sliders-h"></i>
-                        <h2>Portfolio Settings</h2>
+                        <h2>포트폴리오 설정</h2>
                     </div>
 
-                    <!-- 자본금 -->
                     <div class="setting-group">
                         <label for="initialBalance">
-                            <i class="fas fa-wallet"></i> Initial Capital
+                            <i class="fas fa-wallet"></i> 초기 자본금 (USDT)
                         </label>
                         <div class="input-wrapper">
                             <span class="currency">$</span>
                             <input type="number" id="initialBalance" value="10000" min="100" max="1000000">
                         </div>
-                        <div class="input-hint">Min: $100 | Max: $1,000,000</div>
+                        <div class="input-hint">최소: $100 | 최대: $1,000,000</div>
                     </div>
 
-                    <!-- 암호화폐 선택 -->
                     <div class="setting-group">
                         <label for="cryptoSelect">
-                            <i class="fas fa-coins"></i> Trading Pair
+                            <i class="fas fa-coins"></i> 거래 페어
                         </label>
                         <select id="cryptoSelect" class="premium-select">
-                            <option value="BTC">₿ Bitcoin (BTC)</option>
-                            <option value="ETH">Ξ Ethereum (ETH)</option>
-                            <option value="BNB">⧘ Binance Coin (BNB)</option>
-                            <option value="SOL">◎ Solana (SOL)</option>
-                            <option value="ADA">₳ Cardano (ADA)</option>
+                            <option value="BTC">₿ 비트코인 (BTC)</option>
+                            <option value="ETH">Ξ 이더리움 (ETH)</option>
+                            <option value="SOL">◎ 솔라나 (SOL)</option>
+                            <option value="XRP">✕ 리플 (XRP)</option>
+                            <option value="ZRX">Z 제로엑스 (ZRX)</option>
                         </select>
                     </div>
 
-                    <!-- 시간 프레임 -->
-                    <div class="setting-group">
-                        <label for="timeframe">
-                            <i class="fas fa-clock"></i> Timeframe
-                        </label>
-                        <select id="timeframe" class="premium-select">
-                            <option value="1h">1 Hour</option>
-                            <option value="4h">4 Hours</option>
-                            <option value="1d" selected>1 Day</option>
-                            <option value="1w">1 Week</option>
-                        </select>
-                    </div>
-
-                    <!-- 백테스트 기간 -->
                     <div class="setting-group">
                         <label for="period">
-                            <i class="fas fa-calendar-days"></i> Backtest Period
+                            <i class="fas fa-calendar-days"></i> 백테스트 기간 (일)
                         </label>
                         <div class="period-input">
                             <input type="range" id="period" min="7" max="365" value="30" class="slider">
                             <input type="number" id="periodValue" value="30" min="7" max="365" class="period-number">
-                            <span class="period-label">days</span>
+                            <span class="period-label">일</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- 전략 선택 -->
                 <div class="settings-section">
                     <div class="section-header">
                         <i class="fas fa-brain"></i>
-                        <h2>Trading Strategy</h2>
+                        <h2>매매 전략 알고리즘</h2>
                     </div>
 
                     <div class="strategy-grid">
-                        <button class="strategy-card active" data-strategy="ensemble" title="All strategies combined with AI">
+                        <button class="strategy-card active" data-strategy="ensemble" title="AI가 모든 지표를 종합 분석">
                             <div class="strategy-icon">
                                 <i class="fas fa-network-wired"></i>
                             </div>
-                            <div class="strategy-name">Ensemble AI</div>
-                            <div class="strategy-badge">BEST</div>
+                            <div class="strategy-name">앙상블 AI</div>
+                            <div class="strategy-badge">최고 성능</div>
                         </button>
 
-                        <button class="strategy-card" data-strategy="sma" title="Simple Moving Average Crossover">
+                        <button class="strategy-card" data-strategy="sma" title="단기/장기 이동평균선 교차 매매">
                             <div class="strategy-icon">
-                                <i class="fas fa-line-chart"></i>
+                                <i class="fas fa-chart-line"></i>
                             </div>
-                            <div class="strategy-name">SMA Cross</div>
-                            <div class="strategy-badge">CLASSIC</div>
+                            <div class="strategy-name">이동평균(SMA)</div>
+                            <div class="strategy-badge">추세 추종</div>
                         </button>
 
-                        <button class="strategy-card" data-strategy="rsi" title="Relative Strength Index">
+                        <button class="strategy-card" data-strategy="rsi" title="과매수/과매도 구간 역추세 매매">
                             <div class="strategy-icon">
                                 <i class="fas fa-tachometer-alt"></i>
                             </div>
-                            <div class="strategy-name">RSI</div>
-                            <div class="strategy-badge">MOMENTUM</div>
+                            <div class="strategy-name">RSI 역추세</div>
+                            <div class="strategy-badge">반등 포착</div>
                         </button>
 
-                        <button class="strategy-card" data-strategy="macd" title="Moving Average Convergence Divergence">
-                            <div class="strategy-icon">
-                                <i class="fas fa-wave-square"></i>
-                            </div>
-                            <div class="strategy-name">MACD</div>
-                            <div class="strategy-badge">TREND</div>
-                        </button>
-
-                        <button class="strategy-card" data-strategy="bb" title="Bollinger Bands">
+                        <button class="strategy-card" data-strategy="bb" title="볼린저 밴드 이탈/회귀 매매">
                             <div class="strategy-icon">
                                 <i class="fas fa-expand"></i>
                             </div>
-                            <div class="strategy-name">Bollinger</div>
-                            <div class="strategy-badge">VOLATILITY</div>
-                        </button>
-
-                        <button class="strategy-card" data-strategy="atr" title="Average True Range">
-                            <div class="strategy-icon">
-                                <i class="fas fa-arrows-alt"></i>
-                            </div>
-                            <div class="strategy-name">ATR</div>
-                            <div class="strategy-badge">RANGE</div>
+                            <div class="strategy-name">볼린저 밴드</div>
+                            <div class="strategy-badge">변동성</div>
                         </button>
                     </div>
                 </div>
 
-                <!-- 위험 관리 -->
                 <div class="settings-section">
                     <div class="section-header">
                         <i class="fas fa-shield-alt"></i>
-                        <h2>Risk Management</h2>
+                        <h2>리스크 관리 (Risk Mgmt)</h2>
                     </div>
 
                     <div class="risk-slider">
                         <label for="riskPerTrade">
-                            <span>Risk per Trade</span>
+                            <span>거래당 리스크 허용</span>
                             <span class="risk-value">
                                 <span id="riskDisplay">2</span>%
                             </span>
                         </label>
-                        <input type="range" id="riskPerTrade" min="0.5" max="10" step="0.5" value="2" class="slider">
+                        <input type="range" id="riskPerTrade" min="0.5" max="20" step="0.5" value="2" class="slider">
                         <div class="risk-markers">
-                            <span>0.5%</span>
-                            <span>5%</span>
-                            <span>10%</span>
+                            <span>보수적(0.5%)</span>
+                            <span>공격적(20%)</span>
                         </div>
                     </div>
 
-                    <div class="setting-group">
-                        <label for="stopLoss">
-                            <i class="fas fa-arrow-down"></i> Stop Loss
-                        </label>
-                        <div class="input-wrapper">
-                            <input type="number" id="stopLoss" value="5" min="1" max="50">
-                            <span class="input-suffix">%</span>
+                    <div class="setting-group-row">
+                        <div class="setting-group half">
+                            <label for="stopLoss"><i class="fas fa-arrow-down"></i> 손절가(SL)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="stopLoss" value="5" min="1" max="50">
+                                <span class="input-suffix">%</span>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="setting-group">
-                        <label for="takeProfit">
-                            <i class="fas fa-arrow-up"></i> Take Profit
-                        </label>
-                        <div class="input-wrapper">
-                            <input type="number" id="takeProfit" value="10" min="1" max="100">
-                            <span class="input-suffix">%</span>
+                        <div class="setting-group half">
+                            <label for="takeProfit"><i class="fas fa-arrow-up"></i> 익절가(TP)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="takeProfit" value="10" min="1" max="100">
+                                <span class="input-suffix">%</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 액션 버튼 -->
                 <div class="action-buttons">
                     <button id="runBtn" class="btn-primary btn-large">
-                        <i class="fas fa-play-circle"></i>
-                        <span>Start Simulation</span>
+                        <i class="fas fa-rocket"></i>
+                        <span>시뮬레이션 시작</span>
                     </button>
                     <button id="resetBtn" class="btn-secondary btn-large">
                         <i class="fas fa-redo"></i>
-                        <span>Reset</span>
+                        <span>초기화</span>
                     </button>
                 </div>
 
-                <!-- 로딩 인디케이터 -->
                 <div id="loadingSpinner" class="loading-spinner hidden">
                     <div class="spinner-ring"></div>
                     <div class="spinner-ring"></div>
                     <div class="spinner-ring"></div>
-                    <div class="spinner-text">Analyzing Market Data...</div>
+                    <div class="spinner-text">AI가 시장 데이터를 분석 중입니다...</div>
                 </div>
             </aside>
 
-            <!-- 우측 차트 섹션 -->
             <main class="chart-section">
-                <!-- 탭 메뉴 -->
                 <div class="chart-tabs">
                     <button class="tab-btn active" data-tab="price">
-                        <i class="fas fa-chart-line"></i> Price Chart
+                        <i class="fas fa-chart-candlestick"></i> 가격 및 매매 시점
                     </button>
                     <button class="tab-btn" data-tab="equity">
-                        <i class="fas fa-chart-area"></i> Portfolio Equity
-                    </button>
-                    <button class="tab-btn" data-tab="indicators">
-                        <i class="fas fa-chart-bar"></i> Indicators
+                        <i class="fas fa-chart-area"></i> 자산 증감(Equity)
                     </button>
                 </div>
 
-                <!-- 차트 컨테이너 -->
                 <div class="chart-container-wrapper">
                     <div class="chart-container">
                         <canvas id="priceChart"></canvas>
                     </div>
                     <div id="noDataMessage" class="no-data-message">
                         <i class="fas fa-chart-line"></i>
-                        <p>Configure settings and click "Start Simulation" to begin</p>
+                        <p>설정을 확인 후 <strong>'시뮬레이션 시작'</strong> 버튼을 눌러주세요.</p>
                     </div>
                 </div>
 
-                <!-- 성과 지표 -->
                 <div class="metrics-section">
-                    <h3><i class="fas fa-chart-pie"></i> Performance Metrics</h3>
+                    <h3><i class="fas fa-trophy"></i> 성과 분석 리포트</h3>
                     <div class="metrics-grid">
                         <div class="metric-card metric-primary">
                             <div class="metric-header">
-                                <span class="metric-label">Final Balance</span>
+                                <span class="metric-label">최종 자산 (Final Balance)</span>
                                 <i class="fas fa-wallet"></i>
                             </div>
                             <div class="metric-value" id="finalBalance">$10,000.00</div>
@@ -284,65 +231,55 @@
 
                         <div class="metric-card">
                             <div class="metric-header">
-                                <span class="metric-label">Total Return</span>
+                                <span class="metric-label">총 수익률 (Total Return)</span>
                                 <i class="fas fa-percentage"></i>
                             </div>
                             <div class="metric-value" id="totalReturn">0.00%</div>
-                            <div class="metric-change">from initial</div>
+                            <div class="metric-change">초기 대비</div>
                         </div>
 
                         <div class="metric-card">
                             <div class="metric-header">
-                                <span class="metric-label">Win Rate</span>
+                                <span class="metric-label">승률 (Win Rate)</span>
                                 <i class="fas fa-bullseye"></i>
                             </div>
                             <div class="metric-value" id="winRate">0.0%</div>
-                            <div class="metric-change" id="totalTrades">0 trades</div>
+                            <div class="metric-change" id="totalTrades">0회 매매</div>
                         </div>
 
                         <div class="metric-card">
                             <div class="metric-header">
-                                <span class="metric-label">Max Drawdown</span>
+                                <span class="metric-label">최대 낙폭 (MDD)</span>
                                 <i class="fas fa-arrow-trend-down"></i>
                             </div>
                             <div class="metric-value" id="maxDrawdown">0.00%</div>
-                            <div class="metric-change">maximum loss</div>
+                            <div class="metric-change" style="color:var(--danger)">리스크 지표</div>
                         </div>
 
                         <div class="metric-card">
                             <div class="metric-header">
-                                <span class="metric-label">Sharpe Ratio</span>
-                                <i class="fas fa-square-root-alt"></i>
-                            </div>
-                            <div class="metric-value" id="sharpeRatio">0.00</div>
-                            <div class="metric-change">risk-adjusted</div>
-                        </div>
-
-                        <div class="metric-card">
-                            <div class="metric-header">
-                                <span class="metric-label">Profit Factor</span>
-                                <i class="fas fa-chart-line"></i>
+                                <span class="metric-label">손익비 (Profit Factor)</span>
+                                <i class="fas fa-balance-scale"></i>
                             </div>
                             <div class="metric-value" id="profitFactor">0.00</div>
-                            <div class="metric-change" id="avgReturn">avg: 0.00%</div>
+                            <div class="metric-change">총이익 / 총손실</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 거래 기록 -->
                 <div class="trades-section">
                     <div class="trades-header">
-                        <h3><i class="fas fa-receipt"></i> Trade History</h3>
+                        <h3><i class="fas fa-list-ul"></i> 매매 기록 (Trade History)</h3>
                         <div class="trades-filter">
-                            <button class="filter-btn active" data-filter="all">All</button>
-                            <button class="filter-btn" data-filter="buy">Buy</button>
-                            <button class="filter-btn" data-filter="sell">Sell</button>
+                            <button class="filter-btn active" data-filter="all">전체</button>
+                            <button class="filter-btn" data-filter="buy">매수</button>
+                            <button class="filter-btn" data-filter="sell">매도</button>
                         </div>
                     </div>
                     <div id="tradesList" class="trades-list">
                         <div class="empty-trades">
                             <i class="fas fa-inbox"></i>
-                            <p>No trades yet</p>
+                            <p>아직 체결된 거래가 없습니다.</p>
                         </div>
                     </div>
                 </div>
@@ -350,7 +287,6 @@
         </div>
     </div>
 
-    <!-- 토스트 알림 -->
     <div id="toast" class="toast"></div>
 
     <script src="simulator.js"></script>

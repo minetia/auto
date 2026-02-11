@@ -1,5 +1,5 @@
 // =====================
-// 암호화폐 자동매매 시뮬레이터
+// NEXUS TRADE - AI 암호화폐 자동매매 시뮬레이터 로직
 // =====================
 
 class CryptoSimulator {
@@ -13,18 +13,26 @@ class CryptoSimulator {
         this.strategySignals = [];
     }
 
-    // 현실적인 가격 데이터 생성 (기하 브라운 운동)
-    generatePriceData(days, startPrice = 50000) {
+    // 현실적인 가격 데이터 생성 (기하 브라운 운동 모델 사용)
+    generatePriceData(days, startPrice = 50000, coinName = 'BTC') {
         this.priceData = [];
         let price = startPrice;
-        const volatility = 0.025;
-        const drift = 0.0001;
+        
+        // 코인별 변동성 설정 (가상)
+        let volatility = 0.03; // 기본
+        if(coinName === 'ETH') volatility = 0.035;
+        if(coinName === 'SOL') volatility = 0.05;
+        if(coinName === 'ZRX') volatility = 0.06; // 변동성 큼
+        
+        const drift = 0.0002; // 우상향 경향
 
-        for (let i = 0; i < days * 24; i++) {
+        for (let i = 0; i < days * 24; i++) { // 1시간 봉 기준
             const randomChange = (Math.random() - 0.5) * 2 * volatility;
             const change = drift + randomChange;
             price = price * (1 + change);
-            price = Math.max(price, 100);
+            
+            // 데이터 이상치 방지
+            price = Math.max(price, 0.1);
 
             const open = price * (1 + (Math.random() - 0.5) * 0.005);
             const high = Math.max(price, open) * (1 + Math.abs(Math.random() * 0.02));
@@ -42,8 +50,9 @@ class CryptoSimulator {
         return this.priceData;
     }
 
-    // ===== 전략 =====
+    // ===== 전략 알고리즘 (한글화 주석) =====
 
+    // 1. 단순 이동평균 교차 (SMA Crossover)
     strategySMA(fastPeriod = 9, slowPeriod = 21) {
         const signals = [];
         const prices = this.priceData.map(p => p.close);
@@ -62,6 +71,7 @@ class CryptoSimulator {
         return signals;
     }
 
+    // 2. 상대강도지수 (RSI) 역추세 전략
     strategyRSI(period = 14) {
         const signals = [];
         const prices = this.priceData.map(p => p.close);
@@ -69,9 +79,12 @@ class CryptoSimulator {
 
         for (let i = 1; i < rsi.length; i++) {
             if (rsi[i] !== null && rsi[i-1] !== null) {
-                if (rsi[i] < 30 && rsi[i-1] >= 30) {
+                // 과매도(30 이하) 탈출 시 매수
+                if (rsi[i] > 30 && rsi[i-1] <= 30) {
                     signals.push({ index: i, signal: 'BUY', strength: 0.8 });
-                } else if (rsi[i] > 70 && rsi[i-1] <= 70) {
+                } 
+                // 과매수(70 이상) 이탈 시 매도
+                else if (rsi[i] < 70 && rsi[i-1] >= 70) {
                     signals.push({ index: i, signal: 'SELL', strength: 0.8 });
                 }
             }
@@ -79,23 +92,7 @@ class CryptoSimulator {
         return signals;
     }
 
-    strategyMACD() {
-        const signals = [];
-        const prices = this.priceData.map(p => p.close);
-        const macd = this.calculateMACD(prices);
-
-        for (let i = 1; i < macd.length; i++) {
-            if (macd[i].histogram !== null && macd[i-1].histogram !== null) {
-                if (macd[i].histogram > 0 && macd[i-1].histogram <= 0) {
-                    signals.push({ index: i, signal: 'BUY', strength: 0.75 });
-                } else if (macd[i].histogram < 0 && macd[i-1].histogram >= 0) {
-                    signals.push({ index: i, signal: 'SELL', strength: 0.75 });
-                }
-            }
-        }
-        return signals;
-    }
-
+    // 3. 볼린저 밴드 전략
     strategyBollingerBands(period = 20, stdDevMultiplier = 2) {
         const signals = [];
         const prices = this.priceData.map(p => p.close);
@@ -103,9 +100,9 @@ class CryptoSimulator {
 
         for (let i = 1; i < this.priceData.length; i++) {
             if (bb[i].lower && bb[i].upper) {
-                if (prices[i] < bb[i].lower && prices[i-1] >= bb[i-1].lower) {
+                if (prices[i] < bb[i].lower) { // 하단 밴드 터치 (저가 매수 기회)
                     signals.push({ index: i, signal: 'BUY', strength: 0.65 });
-                } else if (prices[i] > bb[i].upper && prices[i-1] <= bb[i-1].upper) {
+                } else if (prices[i] > bb[i].upper) { // 상단 밴드 터치 (고가 매도 기회)
                     signals.push({ index: i, signal: 'SELL', strength: 0.65 });
                 }
             }
@@ -113,39 +110,18 @@ class CryptoSimulator {
         return signals;
     }
 
-    strategyATR(period = 14) {
-        const signals = [];
-        const atr = this.calculateATR(this.priceData, period);
-        const prices = this.priceData.map(p => p.close);
-        const sma = this.calculateSMA(prices, period);
-
-        for (let i = period; i < this.priceData.length; i++) {
-            if (atr[i] && sma[i]) {
-                const upperBand = sma[i] + (atr[i] * 1.5);
-                const lowerBand = sma[i] - (atr[i] * 1.5);
-
-                if (prices[i] > upperBand && prices[i-1] <= upperBand) {
-                    signals.push({ index: i, signal: 'BUY', strength: 0.6 });
-                } else if (prices[i] < lowerBand && prices[i-1] >= lowerBand) {
-                    signals.push({ index: i, signal: 'SELL', strength: 0.6 });
-                }
-            }
-        }
-        return signals;
-    }
-
+    // 4. 앙상블 (모든 전략 종합 AI)
     strategyEnsemble() {
         const allStrategies = [
             this.strategySMA(),
             this.strategyRSI(),
-            this.strategyMACD(),
-            this.strategyBollingerBands(),
-            this.strategyATR()
+            this.strategyBollingerBands()
         ];
 
         const allSignals = allStrategies.flat();
         const signalMap = new Map();
 
+        // 투표 시스템: 각 전략의 신호를 합산
         for (const sig of allSignals) {
             if (!signalMap.has(sig.index)) {
                 signalMap.set(sig.index, { buyScore: 0, sellScore: 0 });
@@ -160,76 +136,52 @@ class CryptoSimulator {
 
         const signals = [];
         for (const [index, scores] of signalMap) {
-            const buyThreshold = 2.0;
-            const sellThreshold = 2.0;
+            // 매수/매도 임계값 설정
+            const buyThreshold = 1.0; 
+            const sellThreshold = 1.0;
 
             if (scores.buyScore >= buyThreshold && scores.buyScore > scores.sellScore) {
-                signals.push({ 
-                    index, 
-                    signal: 'BUY', 
-                    strength: Math.min(scores.buyScore / 5, 1) 
-                });
+                signals.push({ index, signal: 'BUY', strength: 1 });
             } else if (scores.sellScore >= sellThreshold && scores.sellScore > scores.buyScore) {
-                signals.push({ 
-                    index, 
-                    signal: 'SELL', 
-                    strength: Math.min(scores.sellScore / 5, 1) 
-                });
+                signals.push({ index, signal: 'SELL', strength: 1 });
             }
         }
-
         return signals.sort((a, b) => a.index - b.index);
     }
 
-    // ===== 기술적 지표 =====
+    // ===== 기술적 지표 계산 함수들 =====
 
     calculateSMA(prices, period) {
         const sma = [];
         for (let i = 0; i < prices.length; i++) {
-            if (i < period) {
+            if (i < period - 1) {
                 sma.push(null);
             } else {
-                const sum = prices.slice(i - period, i).reduce((a, b) => a + b, 0);
+                const sum = prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
                 sma.push(sum / period);
             }
         }
         return sma;
     }
 
-    calculateEMA(prices, period) {
-        const ema = [];
-        const k = 2 / (period + 1);
-
-        for (let i = 0; i < prices.length; i++) {
-            if (i === 0) {
-                ema.push(prices[i]);
-            } else {
-                ema.push(prices[i] * k + ema[i-1] * (1 - k));
-            }
-        }
-        return ema;
-    }
-
     calculateRSI(prices, period = 14) {
         const rsi = [];
         const changes = [];
-
         for (let i = 1; i < prices.length; i++) {
             changes.push(prices[i] - prices[i-1]);
         }
 
+        // 초기 평균 계산
         let avgGain = 0;
         let avgLoss = 0;
-
         for (let i = 0; i < period; i++) {
             if (changes[i] > 0) avgGain += changes[i];
             else avgLoss += Math.abs(changes[i]);
         }
-
         avgGain /= period;
         avgLoss /= period;
 
-        rsi.push(null);
+        for(let i=0; i<period; i++) rsi.push(null); // 앞부분 채우기
 
         for (let i = period; i < changes.length; i++) {
             const change = changes[i];
@@ -240,59 +192,24 @@ class CryptoSimulator {
                 avgGain = (avgGain * (period - 1)) / period;
                 avgLoss = (avgLoss * (period - 1) + Math.abs(change)) / period;
             }
-
             const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-            const rsiValue = 100 - (100 / (1 + rs));
-            rsi.push(rsiValue);
+            rsi.push(100 - (100 / (1 + rs)));
         }
-
         return rsi;
-    }
-
-    calculateMACD(prices) {
-        const ema12 = this.calculateEMA(prices, 12);
-        const ema26 = this.calculateEMA(prices, 26);
-        const macd = [];
-
-        for (let i = 0; i < prices.length; i++) {
-            macd.push({
-                macdLine: (ema12[i] - ema26[i]) || null,
-                signal: null,
-                histogram: null
-            });
-        }
-
-        const signalLine = this.calculateEMA(macd.map(m => m.macdLine).filter(v => v !== null), 9);
-        let signalIndex = 0;
-
-        for (let i = 0; i < macd.length; i++) {
-            if (macd[i].macdLine !== null) {
-                if (signalIndex < signalLine.length) {
-                    macd[i].signal = signalLine[signalIndex];
-                    macd[i].histogram = macd[i].macdLine - macd[i].signal;
-                    signalIndex++;
-                }
-            }
-        }
-
-        return macd;
     }
 
     calculateBollingerBands(prices, period = 20, stdDev = 2) {
         const sma = this.calculateSMA(prices, period);
         const bands = [];
-
         for (let i = 0; i < prices.length; i++) {
             if (i < period || !sma[i]) {
                 bands.push({ upper: null, middle: null, lower: null });
                 continue;
             }
-
-            const slice = prices.slice(i - period, i);
+            const slice = prices.slice(i - period + 1, i + 1);
             const mean = sma[i];
             const variance = slice.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / period;
             const std = Math.sqrt(variance);
-
             bands.push({
                 upper: mean + (std * stdDev),
                 middle: mean,
@@ -302,36 +219,7 @@ class CryptoSimulator {
         return bands;
     }
 
-    calculateATR(priceData, period = 14) {
-        const atr = [];
-        const tr = [];
-
-        for (let i = 1; i < priceData.length; i++) {
-            const high = priceData[i].high;
-            const low = priceData[i].low;
-            const prevClose = priceData[i-1].close;
-
-            const tr1 = high - low;
-            const tr2 = Math.abs(high - prevClose);
-            const tr3 = Math.abs(low - prevClose);
-            tr.push(Math.max(tr1, tr2, tr3));
-        }
-
-        for (let i = 0; i < tr.length; i++) {
-            if (i < period - 1) {
-                atr.push(null);
-            } else if (i === period - 1) {
-                const sum = tr.slice(0, period).reduce((a, b) => a + b, 0);
-                atr.push(sum / period);
-            } else {
-                atr.push((atr[i-1] * (period - 1) + tr[i]) / period);
-            }
-        }
-
-        return atr;
-    }
-
-    // ===== 백테스팅 =====
+    // ===== 백테스팅 엔진 =====
 
     backtest(initialBalance, stopLoss, takeProfit, riskPerTrade) {
         this.balance = initialBalance;
@@ -346,54 +234,57 @@ class CryptoSimulator {
             const currentPrice = this.priceData[i].close;
             const signal = this.strategySignals.find(s => s.index === i);
 
-            // 손절매/익절매
+            // 1. 보유 중일 때 (매도 조건 체크)
             if (this.holdings > 0 && entryPrice) {
                 const profitPercent = ((currentPrice - entryPrice) / entryPrice) * 100;
 
+                // 손절매 (Stop Loss)
                 if (profitPercent <= -stopLoss) {
-                    this.executeSell(i, currentPrice, 'STOP_LOSS');
-                    this.holdings = 0;
+                    this.executeSell(i, currentPrice, '손절매(SL)');
                     entryPrice = null;
-                } else if (profitPercent >= takeProfit) {
-                    this.executeSell(i, currentPrice, 'TAKE_PROFIT');
-                    this.holdings = 0;
+                } 
+                // 익절매 (Take Profit)
+                else if (profitPercent >= takeProfit) {
+                    this.executeSell(i, currentPrice, '익절매(TP)');
+                    entryPrice = null;
+                }
+                // 전략 매도 신호
+                else if (signal && signal.signal === 'SELL') {
+                    this.executeSell(i, currentPrice, '전략 매도');
                     entryPrice = null;
                 }
             }
-
-            // 신호 처리
-            if (signal) {
-                if (signal.signal === 'BUY' && this.holdings === 0) {
-                    const tradeSize = (this.balance * riskPerTrade) / 100 / currentPrice;
-                    this.holdings = tradeSize;
+            // 2. 미보유 중일 때 (매수 조건 체크)
+            else if (this.holdings === 0) {
+                if (signal && signal.signal === 'BUY') {
+                    // 리스크 관리: 자산의 N%만 진입
+                    const positionSize = (this.balance * riskPerTrade) / 100;
+                    const tradeAmount = positionSize / currentPrice;
+                    
+                    this.holdings = tradeAmount;
+                    this.balance -= positionSize;
                     entryPrice = currentPrice;
-                    this.balance -= tradeSize * currentPrice;
 
                     this.trades.push({
                         index: i,
                         time: this.priceData[i].timestamp,
                         type: 'BUY',
                         price: currentPrice,
-                        amount: tradeSize,
-                        cost: tradeSize * currentPrice
+                        amount: tradeAmount,
+                        cost: positionSize
                     });
-                }
-                else if (signal.signal === 'SELL' && this.holdings > 0) {
-                    this.executeSell(i, currentPrice, 'SIGNAL');
-                    this.holdings = 0;
-                    entryPrice = null;
                 }
             }
 
+            // 자산 가치 기록
             const currentEquity = this.balance + (this.holdings * currentPrice);
             this.equity.push(currentEquity);
         }
 
-        // 마지막 포지션 정리
+        // 마지막에 보유 중이면 강제 청산하여 최종 자산 확정
         if (this.holdings > 0) {
             const finalPrice = this.priceData[this.priceData.length - 1].close;
-            this.executeSell(this.priceData.length - 1, finalPrice, 'FINAL');
-            this.equity[this.equity.length - 1] = this.balance;
+            this.executeSell(this.priceData.length - 1, finalPrice, '종료 청산');
         }
 
         return this.calculateMetrics(initialBalance);
@@ -402,6 +293,11 @@ class CryptoSimulator {
     executeSell(index, price, reason) {
         const revenue = this.holdings * price;
         this.balance += revenue;
+        
+        // 가장 최근 매수 기록 찾기
+        const lastBuy = [...this.trades].reverse().find(t => t.type === 'BUY');
+        const profit = lastBuy ? revenue - lastBuy.cost : 0;
+        const profitPercent = lastBuy ? (profit / lastBuy.cost) * 100 : 0;
 
         this.trades.push({
             index: index,
@@ -410,74 +306,59 @@ class CryptoSimulator {
             price: price,
             amount: this.holdings,
             revenue: revenue,
+            profit: profit,
+            profitPercent: profitPercent,
             reason: reason
         });
+        
+        this.holdings = 0;
     }
 
     getStrategySignals() {
         switch(this.selectedStrategy) {
             case 'sma': return this.strategySMA();
             case 'rsi': return this.strategyRSI();
-            case 'macd': return this.strategyMACD();
             case 'bb': return this.strategyBollingerBands();
-            case 'atr': return this.strategyATR();
-            case 'ensemble': return this.strategyEnsemble();
             default: return this.strategyEnsemble();
         }
     }
 
     calculateMetrics(initialBalance) {
-        const finalBalance = this.equity[this.equity.length - 1];
+        const finalBalance = this.balance;
         const returns = ((finalBalance - initialBalance) / initialBalance) * 100;
-
+        
         const buyTrades = this.trades.filter(t => t.type === 'BUY');
         const sellTrades = this.trades.filter(t => t.type === 'SELL');
+        
+        let wins = 0;
+        let totalProfit = 0;
+        let totalLoss = 0;
 
-        let winningTrades = 0;
-        let profitLossPairs = [];
-
-        for (let i = 0; i < buyTrades.length; i++) {
-            const buyTrade = buyTrades[i];
-            const correspondingSell = sellTrades.find(s => s.index > buyTrade.index);
-
-            if (correspondingSell) {
-                const profit = ((correspondingSell.revenue - buyTrade.cost) / buyTrade.cost) * 100;
-                profitLossPairs.push(profit);
-                if (profit > 0) winningTrades++;
+        sellTrades.forEach(t => {
+            if (t.profit > 0) {
+                wins++;
+                totalProfit += t.profit;
+            } else {
+                totalLoss += Math.abs(t.profit);
             }
-        }
+        });
 
+        // 최대 낙폭 (MDD)
         let maxDrawdown = 0;
         let peak = this.equity[0];
         for (const eq of this.equity) {
             if (eq > peak) peak = eq;
-            const drawdown = ((peak - eq) / peak) * 100;
-            if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+            const dd = ((peak - eq) / peak) * 100;
+            if (dd > maxDrawdown) maxDrawdown = dd;
         }
-
-        const returns_arr = [];
-        for (let i = 1; i < this.equity.length; i++) {
-            returns_arr.push((this.equity[i] - this.equity[i-1]) / this.equity[i-1]);
-        }
-        const avgReturn = returns_arr.reduce((a, b) => a + b, 0) / returns_arr.length || 0;
-        const variance = returns_arr.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns_arr.length;
-        const stdDev = Math.sqrt(variance);
-        const sharpeRatio = stdDev !== 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0;
-
-        const grossProfit = profitLossPairs.filter(p => p > 0).reduce((a, b) => a + b, 0) || 0;
-        const grossLoss = Math.abs(profitLossPairs.filter(p => p < 0).reduce((a, b) => a + b, 0)) || 1;
-        const profitFactor = grossProfit / grossLoss;
 
         return {
-            finalBalance: finalBalance,
-            returns: returns,
-            totalTrades: buyTrades.length,
-            winRate: buyTrades.length > 0 ? (winningTrades / buyTrades.length) * 100 : 0,
-            maxDrawdown: maxDrawdown,
-            sharpeRatio: sharpeRatio,
-            profitFactor: isFinite(profitFactor) ? profitFactor : 0,
-            avgReturn: (avgReturn * 100),
-            profitLossPairs: profitLossPairs
+            finalBalance,
+            returns,
+            totalTrades: sellTrades.length, // 완료된 거래 기준
+            winRate: sellTrades.length > 0 ? (wins / sellTrades.length) * 100 : 0,
+            maxDrawdown,
+            profitFactor: totalLoss === 0 ? (totalProfit > 0 ? 999 : 0) : totalProfit / totalLoss
         };
     }
 }
@@ -502,32 +383,27 @@ class SimulatorUI {
         document.getElementById('runBtn').addEventListener('click', () => this.runSimulation());
         document.getElementById('resetBtn').addEventListener('click', () => this.reset());
 
-        // 전략 선택
+        // 전략 선택 버튼
         document.querySelectorAll('.strategy-card').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const card = e.currentTarget;
                 document.querySelectorAll('.strategy-card').forEach(b => b.classList.remove('active'));
-                card.classList.add('active');
-                this.simulator.selectedStrategy = card.dataset.strategy;
+                e.currentTarget.classList.add('active');
+                this.simulator.selectedStrategy = e.currentTarget.dataset.strategy;
             });
         });
 
-        // 기간 슬라이더
+        // 슬라이더 값 연동
         const periodSlider = document.getElementById('period');
         const periodNumber = document.getElementById('periodValue');
-        periodSlider.addEventListener('input', (e) => {
-            periodNumber.value = e.target.value;
-        });
-        periodNumber.addEventListener('input', (e) => {
-            periodSlider.value = e.target.value;
-        });
+        periodSlider.addEventListener('input', (e) => periodNumber.value = e.target.value);
+        periodNumber.addEventListener('input', (e) => periodSlider.value = e.target.value);
 
-        // 위험률 슬라이더
+        // 리스크 슬라이더
         document.getElementById('riskPerTrade').addEventListener('input', (e) => {
             document.getElementById('riskDisplay').textContent = e.target.value;
         });
 
-        // 필터 버튼
+        // 거래 필터링
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -535,107 +411,50 @@ class SimulatorUI {
                 this.filterTrades(e.target.dataset.filter);
             });
         });
-
-        // 탭
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                // 탭 전환 로직 (필요시 구현)
-            });
-        });
     }
 
+    // Chart.js 초기화
     initChart() {
         const ctx = document.getElementById('priceChart').getContext('2d');
+        
+        // 기존 차트가 있으면 파괴 (메모리 누수 방지)
+        if (this.chart) {
+            this.chart.destroy();
+        }
+
         this.chart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: [],
-                datasets: [
-                    {
-                        label: 'Price',
-                        data: [],
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        borderWidth: 2.5,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 0,
-                        pointHoverRadius: 6,
-                        yAxisID: 'y',
-                        segment: {
-                            borderColor: ctx => ctx.p0DataIndex === -1 ? '#667eea' : '#667eea'
-                        }
-                    },
-                    {
-                        label: 'Portfolio Value',
-                        data: [],
-                        borderColor: '#38ef7d',
-                        backgroundColor: 'rgba(56, 239, 125, 0.05)',
-                        borderWidth: 2.5,
-                        fill: false,
-                        tension: 0.4,
-                        pointRadius: 0,
-                        pointHoverRadius: 6,
-                        yAxisID: 'y1'
-                    }
-                ]
+                datasets: [{
+                    label: '가격',
+                    data: [],
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 0,
+                    yAxisID: 'y'
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: {
-                        labels: {
-                            color: '#b0b8d4',
-                            font: { size: 12, weight: '600' },
-                            boxWidth: 12,
-                            padding: 15,
-                            usePointStyle: true,
-                            pointStyle: 'circle'
-                        }
-                    },
-                    filler: {
-                        propagate: true
-                    }
+                    legend: { labels: { color: '#b0b8d4' } },
+                    tooltip: { mode: 'index', intersect: false }
                 },
                 scales: {
                     y: {
-                        type: 'linear',
-                        position: 'left',
-                        ticks: {
-                            color: '#7a8399',
-                            font: { size: 11, weight: '500' },
-                            callback: function(value) {
-                                return '$' + value.toFixed(0);
-                            }
-                        },
-                        grid: {
-                            color: 'rgba(45, 53, 84, 0.5)',
-                            drawBorder: false
-                        }
-                    },
-                    y1: {
-                        type: 'linear',
-                        position: 'right',
-                        ticks: {
-                            color: '#7a8399',
-                            font: { size: 11, weight: '500' },
-                            callback: function(value) {
-                                return '$' + value.toFixed(0);
-                            }
-                        },
-                        grid: { drawOnChartArea: false }
+                        type: 'linear', display: true, position: 'left',
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#7a8399' }
                     },
                     x: {
-                        ticks: {
-                            color: '#7a8399',
-                            font: { size: 11, weight: '500' }
-                        },
-                        grid: {
-                            color: 'rgba(45, 53, 84, 0.5)',
-                            drawBorder: false
-                        }
+                        grid: { display: false },
+                        ticks: { color: '#7a8399', maxTicksLimit: 10 }
                     }
                 }
             }
@@ -652,35 +471,39 @@ class SimulatorUI {
         noDataMsg.classList.add('hidden');
 
         try {
+            // 입력값 가져오기
             const initialBalance = parseFloat(document.getElementById('initialBalance').value);
             const period = parseFloat(document.getElementById('period').value);
             const stopLoss = parseFloat(document.getElementById('stopLoss').value);
             const takeProfit = parseFloat(document.getElementById('takeProfit').value);
             const riskPerTrade = parseFloat(document.getElementById('riskPerTrade').value);
+            const coinSelect = document.getElementById('cryptoSelect').value;
 
-            // 검증
-            if (!initialBalance || initialBalance < 100) {
-                this.showToast('Initial capital must be at least $100', 'error');
-                return;
-            }
-            if (!period || period < 7) {
-                this.showToast('Backtest period must be at least 7 days', 'error');
-                return;
-            }
+            // 유효성 검사
+            if (initialBalance < 100) throw new Error("초기 자본금은 최소 $100 이상이어야 합니다.");
+            
+            // 약간의 딜레이로 로딩 효과 (UX)
+            await new Promise(resolve => setTimeout(resolve, 800));
 
-            // 비동기 처리
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // 시작 가격 설정 (코인별 대략적 가격)
+            let startPrice = 50000;
+            if(coinSelect === 'ETH') startPrice = 3000;
+            if(coinSelect === 'SOL') startPrice = 100;
+            if(coinSelect === 'XRP') startPrice = 0.5;
+            if(coinSelect === 'ZRX') startPrice = 0.4;
 
-            this.simulator.generatePriceData(period);
+            // 시뮬레이션 실행
+            this.simulator.generatePriceData(period, startPrice, coinSelect);
             const metrics = this.simulator.backtest(initialBalance, stopLoss, takeProfit, riskPerTrade);
 
             this.updateChart();
             this.displayResults(metrics);
             this.displayTrades();
-            this.showToast('Simulation completed successfully!', 'success');
+            this.showToast('시뮬레이션이 성공적으로 완료되었습니다.', 'success');
+
         } catch (error) {
-            console.error('Simulation error:', error);
-            this.showToast('Error during simulation: ' + error.message, 'error');
+            console.error(error);
+            this.showToast(error.message, 'error');
         } finally {
             spinner.classList.add('hidden');
             runBtn.disabled = false;
@@ -689,60 +512,47 @@ class SimulatorUI {
 
     updateChart() {
         const prices = this.simulator.priceData.map(p => p.close);
-        const equity = this.simulator.equity;
         const labels = this.simulator.priceData.map(p => 
-            p.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            p.timestamp.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit' })
         );
 
         this.chart.data.labels = labels;
-        this.chart.data.datasets[0].data = prices;
-        this.chart.data.datasets[1].data = equity;
+        this.chart.data.datasets = [{
+            label: '코인 가격',
+            data: prices,
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            borderWidth: 2,
+            pointRadius: 0,
+            yAxisID: 'y'
+        }];
 
-        // Buy/Sell 포인트
-        const buyPoints = this.simulator.trades
-            .filter(t => t.type === 'BUY')
-            .map(t => ({
-                x: labels[t.index],
-                y: prices[t.index],
-                index: t.index
-            }));
-
-        const sellPoints = this.simulator.trades
-            .filter(t => t.type === 'SELL')
-            .map(t => ({
-                x: labels[t.index],
-                y: prices[t.index],
-                index: t.index
-            }));
-
-        // 기존 포인트 데이터셋 제거 후 새로 추가
-        this.chart.data.datasets = this.chart.data.datasets.slice(0, 2);
+        // 매수/매도 포인트 시각화
+        const buyPoints = this.simulator.trades.filter(t => t.type === 'BUY').map(t => ({ x: labels[t.index], y: t.price }));
+        const sellPoints = this.simulator.trades.filter(t => t.type === 'SELL').map(t => ({ x: labels[t.index], y: t.price }));
 
         if (buyPoints.length > 0) {
             this.chart.data.datasets.push({
-                label: 'Buy Signal',
-                data: buyPoints.map(p => ({ x: p.x, y: p.y })),
-                pointBackgroundColor: '#667eea',
-                pointBorderColor: '#667eea',
+                label: '매수 진입',
+                data: buyPoints,
+                borderColor: '#38ef7d',
+                backgroundColor: '#38ef7d',
+                pointStyle: 'triangle',
                 pointRadius: 6,
-                pointHoverRadius: 8,
-                showLine: false,
                 type: 'scatter',
-                yAxisID: 'y'
+                showLine: false
             });
         }
-
         if (sellPoints.length > 0) {
             this.chart.data.datasets.push({
-                label: 'Sell Signal',
-                data: sellPoints.map(p => ({ x: p.x, y: p.y })),
-                pointBackgroundColor: '#f5576c',
-                pointBorderColor: '#f5576c',
+                label: '매도 청산',
+                data: sellPoints,
+                borderColor: '#f5576c',
+                backgroundColor: '#f5576c',
+                pointStyle: 'rectRot',
                 pointRadius: 6,
-                pointHoverRadius: 8,
-                showLine: false,
                 type: 'scatter',
-                yAxisID: 'y'
+                showLine: false
             });
         }
 
@@ -750,165 +560,94 @@ class SimulatorUI {
     }
 
     displayResults(metrics) {
-        // Final Balance
-        document.getElementById('finalBalance').textContent = 
-            '$' + metrics.finalBalance.toFixed(2);
+        // 숫자 포맷터 (달러)
+        const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+        
+        document.getElementById('finalBalance').textContent = fmt.format(metrics.finalBalance);
+        
+        const returnEl = document.getElementById('returnPercent');
+        returnEl.textContent = (metrics.returns >= 0 ? '+' : '') + metrics.returns.toFixed(2) + '%';
+        returnEl.style.color = metrics.returns >= 0 ? 'var(--success)' : 'var(--danger)';
 
-        // Return Percent
-        const returnPercent = document.getElementById('returnPercent');
-        const returnValue = metrics.returns.toFixed(2);
-        returnPercent.textContent = (metrics.returns >= 0 ? '+' : '') + returnValue + '%';
-        returnPercent.classList.toggle('positive', metrics.returns >= 0);
-        returnPercent.classList.toggle('negative', metrics.returns < 0);
-
-        // Total Return
-        document.getElementById('totalReturn').textContent = 
-            (metrics.returns >= 0 ? '+' : '') + metrics.returns.toFixed(2) + '%';
-
-        // Trades
-        document.getElementById('totalTrades').textContent = 
-            metrics.totalTrades + ' trade' + (metrics.totalTrades !== 1 ? 's' : '');
-
-        // Win Rate
-        document.getElementById('winRate').textContent = 
-            metrics.winRate.toFixed(1) + '%';
-
-        // Max Drawdown
-        document.getElementById('maxDrawdown').textContent = 
-            metrics.maxDrawdown.toFixed(2) + '%';
-
-        // Sharpe Ratio
-        document.getElementById('sharpeRatio').textContent = 
-            metrics.sharpeRatio.toFixed(2);
-
-        // Profit Factor
-        document.getElementById('profitFactor').textContent = 
-            metrics.profitFactor.toFixed(2);
-
-        document.getElementById('avgReturn').textContent = 
-            'avg: ' + metrics.avgReturn.toFixed(2) + '%';
+        document.getElementById('totalReturn').textContent = metrics.returns.toFixed(2) + '%';
+        document.getElementById('totalTrades').textContent = metrics.totalTrades + '회 완료';
+        document.getElementById('winRate').textContent = metrics.winRate.toFixed(1) + '%';
+        document.getElementById('maxDrawdown').textContent = '-' + metrics.maxDrawdown.toFixed(2) + '%';
+        document.getElementById('profitFactor').textContent = metrics.profitFactor.toFixed(2);
     }
 
     displayTrades() {
-        const tradesList = document.getElementById('tradesList');
+        const list = document.getElementById('tradesList');
+        list.innerHTML = '';
 
         if (this.simulator.trades.length === 0) {
-            tradesList.innerHTML = `
-                <div class="empty-trades">
-                    <i class="fas fa-inbox"></i>
-                    <p>No trades executed</p>
-                </div>
-            `;
+            list.innerHTML = '<div class="empty-trades"><p>체결된 거래가 없습니다.</p></div>';
             return;
         }
 
-        let buyTrade = null;
-        let tradesHTML = '';
-
-        for (const trade of this.simulator.trades) {
-            const timeStr = trade.time.toLocaleTimeString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-
+        // 역순 정렬 (최신순)
+        [...this.simulator.trades].reverse().forEach(trade => {
+            const div = document.createElement('div');
+            div.className = `trade-item ${trade.type.toLowerCase()}`;
+            
+            const timeStr = trade.time.toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+            
+            let details = '';
             if (trade.type === 'BUY') {
-                buyTrade = trade;
-                tradesHTML += `
-                    <div class="trade-item buy">
-                        <div class="trade-time">${trade.time.toLocaleDateString('en-US')} ${timeStr}</div>
-                        <div class="trade-details">
-                            <span class="trade-action">BUY</span>
-                            <span class="trade-price">@ $${trade.price.toFixed(2)}</span>
-                            <span>${trade.amount.toFixed(6)} units</span>
-                        </div>
-                    </div>
-                `;
+                details = `
+                    <div class="trade-info">
+                        <span class="trade-badge">BUY</span>
+                        <span>$${trade.price.toFixed(2)}</span>
+                    </div>`;
             } else {
-                let profit = 0;
-                let profitPercent = 0;
-                
-                if (buyTrade) {
-                    profit = (trade.revenue - buyTrade.cost) / buyTrade.cost * 100;
-                    profitPercent = profit;
-                }
-
-                tradesHTML += `
-                    <div class="trade-item sell">
-                        <div class="trade-time">${trade.time.toLocaleDateString('en-US')} ${timeStr}</div>
-                        <div class="trade-details">
-                            <span class="trade-action">SELL</span>
-                            <span class="trade-price">@ $${trade.price.toFixed(2)}</span>
-                            <span class="trade-profit ${profitPercent >= 0 ? '' : 'negative'}">
-                                ${profitPercent >= 0 ? '+' : ''}${profitPercent.toFixed(2)}%
-                            </span>
-                        </div>
+                const pClass = trade.profit >= 0 ? 'profit-positive' : 'profit-negative';
+                const sign = trade.profit >= 0 ? '+' : '';
+                details = `
+                    <div class="trade-info">
+                        <span class="trade-badge">SELL</span>
+                        <span>$${trade.price.toFixed(2)}</span>
+                        <span class="${pClass}">(${sign}${trade.profitPercent.toFixed(2)}%)</span>
                     </div>
-                `;
+                    <div style="font-size:11px; color:#aaa; margin-top:2px;">${trade.reason}</div>`;
             }
-        }
 
-        tradesList.innerHTML = tradesHTML;
+            div.innerHTML = `
+                <div class="trade-time">${timeStr}</div>
+                <div style="text-align:right;">${details}</div>
+            `;
+            list.appendChild(div);
+        });
     }
 
     filterTrades(filter) {
-        const trades = document.querySelectorAll('.trade-item');
-        trades.forEach(trade => {
-            if (filter === 'all') {
-                trade.style.display = '';
-            } else if (filter === 'buy') {
-                trade.style.display = trade.classList.contains('buy') ? '' : 'none';
-            } else if (filter === 'sell') {
-                trade.style.display = trade.classList.contains('sell') ? '' : 'none';
-            }
+        const items = document.querySelectorAll('.trade-item');
+        items.forEach(item => {
+            if (filter === 'all') item.style.display = 'flex';
+            else if (filter === 'buy' && item.classList.contains('buy')) item.style.display = 'flex';
+            else if (filter === 'sell' && item.classList.contains('sell')) item.style.display = 'flex';
+            else item.style.display = 'none';
         });
+    }
+
+    showToast(msg, type) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.className = `toast show ${type}`;
+        setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
     reset() {
         this.simulator = new CryptoSimulator();
-        document.getElementById('runBtn').disabled = false;
-        
-        // 차트 초기화
-        this.chart.data.labels = [];
-        this.chart.data.datasets.forEach(ds => ds.data = []);
-        this.chart.update();
-
-        // 메트릭 초기화
+        this.initChart();
         document.getElementById('finalBalance').textContent = '$10,000.00';
         document.getElementById('returnPercent').textContent = '+0.00%';
-        document.getElementById('totalReturn').textContent = '0.00%';
-        document.getElementById('totalTrades').textContent = '0 trades';
-        document.getElementById('winRate').textContent = '0.0%';
-        document.getElementById('maxDrawdown').textContent = '0.00%';
-        document.getElementById('sharpeRatio').textContent = '0.00';
-        document.getElementById('profitFactor').textContent = '0.00';
-        document.getElementById('avgReturn').textContent = 'avg: 0.00%';
-
-        // 거래 초기화
-        document.getElementById('tradesList').innerHTML = `
-            <div class="empty-trades">
-                <i class="fas fa-inbox"></i>
-                <p>No trades yet</p>
-            </div>
-        `;
-
+        document.getElementById('tradesList').innerHTML = '<div class="empty-trades"><p>초기화됨</p></div>';
         document.getElementById('noDataMessage').classList.remove('hidden');
-
-        this.showToast('Simulator reset successfully', 'success');
-    }
-
-    showToast(message, type = 'info') {
-        const toast = document.getElementById('toast');
-        toast.textContent = message;
-        toast.className = `toast show ${type}`;
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
+        this.showToast('초기화되었습니다.', 'success');
     }
 }
 
-// 초기화
+// 앱 시작
 document.addEventListener('DOMContentLoaded', () => {
     new SimulatorUI();
 });
