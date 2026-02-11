@@ -1,5 +1,5 @@
 // =====================
-// NEXUS TRADE - AI 암호화폐 자동매매 시뮬레이터 로직 (수정완료)
+// NEXUS TRADE - AI 암호화폐 자동매매 시뮬레이터 (오류 수정판)
 // =====================
 
 class CryptoSimulator {
@@ -13,11 +13,10 @@ class CryptoSimulator {
         this.strategySignals = [];
     }
 
-    // 현실적인 가격 데이터 생성
+    // 데이터 생성
     generatePriceData(days, startPrice = 50000, coinName = 'BTC') {
         this.priceData = [];
         let price = startPrice;
-        
         let volatility = 0.03; 
         if(coinName === 'ETH') volatility = 0.035;
         if(coinName === 'SOL') volatility = 0.05;
@@ -47,7 +46,7 @@ class CryptoSimulator {
         return this.priceData;
     }
 
-    // 전략 알고리즘들
+    // 전략 알고리즘
     strategySMA(fastPeriod = 9, slowPeriod = 21) {
         const signals = [];
         const prices = this.priceData.map(p => p.close);
@@ -296,7 +295,7 @@ class CryptoSimulator {
 }
 
 // =====================
-// UI 컨트롤러
+// UI 컨트롤러 (여기가 수정되었습니다)
 // =====================
 class SimulatorUI {
     constructor() {
@@ -311,6 +310,7 @@ class SimulatorUI {
     }
 
     setupEventListeners() {
+        // null 체크를 추가하여 버튼이 없어도 에러가 나지 않게 함
         const runBtn = document.getElementById('runBtn');
         if(runBtn) runBtn.addEventListener('click', () => this.runSimulation());
         
@@ -471,17 +471,14 @@ class SimulatorUI {
         this.chart.update();
     }
 
+    // [핵심 수정] 요소가 있는지 확인하고 값을 넣는 함수
     displayResults(metrics) {
         const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
         
-        // 요소 존재 여부 확인 후 값 할당 (에러 방지 핵심)
+        // 안전한 텍스트 설정 헬퍼 함수
         const setText = (id, text) => {
             const el = document.getElementById(id);
             if(el) el.textContent = text;
-        };
-        const setHtml = (id, html) => {
-            const el = document.getElementById(id);
-            if(el) el.innerHTML = html;
         };
 
         setText('finalBalance', fmt.format(metrics.finalBalance));
@@ -493,7 +490,7 @@ class SimulatorUI {
         }
 
         setText('totalReturn', metrics.returns.toFixed(2) + '%');
-        setText('totalTrades', metrics.totalTrades + '회 매매'); // 한글 출력 확인
+        setText('totalTrades', metrics.totalTrades + '회 매매'); // 한글화 확인
         setText('winRate', metrics.winRate.toFixed(1) + '%');
         setText('maxDrawdown', '-' + metrics.maxDrawdown.toFixed(2) + '%');
         setText('profitFactor', metrics.profitFactor.toFixed(2));
@@ -501,7 +498,7 @@ class SimulatorUI {
 
     displayTrades() {
         const list = document.getElementById('tradesList');
-        if(!list) return;
+        if(!list) return; // 리스트가 없으면 종료 (에러 방지)
         list.innerHTML = '';
 
         if (this.simulator.trades.length === 0) {
@@ -537,8 +534,16 @@ class SimulatorUI {
     reset() {
         this.simulator = new CryptoSimulator();
         this.initChart();
-        document.getElementById('finalBalance').textContent = '$10,000.00';
-        document.getElementById('tradesList').innerHTML = '<div class="empty-trades"><p>초기화됨</p></div>';
+        const setText = (id, text) => {
+            const el = document.getElementById(id);
+            if(el) el.textContent = text;
+        };
+        
+        setText('finalBalance', '$10,000.00');
+        setText('returnPercent', '+0.00%');
+        const list = document.getElementById('tradesList');
+        if(list) list.innerHTML = '<div class="empty-trades"><p>초기화됨</p></div>';
+        
         const noDataMsg = document.getElementById('noDataMessage');
         if(noDataMsg) noDataMsg.classList.remove('hidden');
         this.showToast('초기화되었습니다.', 'success');
