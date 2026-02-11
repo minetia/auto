@@ -3,33 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXUS TRADE - AI Auto Trading</title>
+    <title>NEXUS TRADE</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <div class="logo">
+    <div class="app-container">
+        <header>
+            <div class="brand">
                 <i class="fas fa-robot"></i>
                 <div>
                     <h1>NEXUS TRADE</h1>
-                    <p>AI 암호화폐 자동매매 시뮬레이터</p>
+                    <span class="status-badge">● Online</span>
                 </div>
-            </div>
-            <div class="server-status">
-                <span class="dot"></span> Server: Online
             </div>
         </header>
 
-        <div class="main-grid">
-            <aside class="control-panel">
-                <div class="panel-section">
-                    <h3><i class="fas fa-coins"></i> 자산 설정</h3>
-                    <label>초기 자본금 ($)</label>
-                    <input type="number" id="initialBalance" value="10000">
-                    
+        <div class="control-card">
+            <div class="section-title"><i class="fas fa-wallet"></i> 자산 및 코인 설정</div>
+            
+            <div class="input-group">
+                <label>초기 자본금 ($)</label>
+                <input type="number" id="initialBalance" value="10000">
+            </div>
+
+            <div class="row-group">
+                <div class="input-group half">
                     <label>대상 코인</label>
                     <select id="cryptoSelect">
                         <option value="BTC">비트코인 (BTC)</option>
@@ -38,97 +38,94 @@
                         <option value="XRP">리플 (XRP)</option>
                         <option value="ZRX">제로엑스 (ZRX)</option>
                     </select>
-
-                    <label>백테스트 기간 (일)</label>
+                </div>
+                <div class="input-group half">
+                    <label>기간 (일)</label>
                     <input type="number" id="period" value="30">
                 </div>
+            </div>
 
-                <div class="panel-section">
-                    <h3><i class="fas fa-sliders-h"></i> 전략 설정</h3>
-                    <div class="strategy-grid">
-                        <div class="strategy-card active" data-strategy="ensemble">
-                            <i class="fas fa-brain"></i> 앙상블 AI
-                        </div>
-                        <div class="strategy-card" data-strategy="sma">
-                            <i class="fas fa-chart-line"></i> 이동평균
-                        </div>
-                        <div class="strategy-card" data-strategy="rsi">
-                            <i class="fas fa-bolt"></i> RSI 역추세
-                        </div>
-                        <div class="strategy-card" data-strategy="bb">
-                            <i class="fas fa-expand"></i> 볼린저
-                        </div>
-                    </div>
-                </div>
+            <div class="section-title"><i class="fas fa-chess-board"></i> 전략 선택</div>
+            <div class="strategy-grid">
+                <div class="strategy-btn active" data-strategy="ensemble">앙상블 AI</div>
+                <div class="strategy-btn" data-strategy="sma">이동평균</div>
+                <div class="strategy-btn" data-strategy="rsi">RSI 역추세</div>
+                <div class="strategy-btn" data-strategy="bb">볼린저</div>
+            </div>
 
-                <div class="panel-section">
-                    <h3><i class="fas fa-shield-alt"></i> 리스크 관리</h3>
-                    <label>익절가 (Take Profit %)</label>
+            <div class="section-title"><i class="fas fa-shield-alt"></i> 리스크 관리</div>
+            <div class="row-group">
+                <div class="input-group half">
+                    <label>익절가 (%)</label>
                     <input type="number" id="takeProfit" value="10">
-                    <label>손절가 (Stop Loss %)</label>
-                    <input type="number" id="stopLoss" value="5">
-                    <label>거래당 투입 비중 (%)</label>
-                    <input type="range" id="riskPerTrade" min="1" max="50" value="5">
-                    <div style="text-align:right; font-size:12px; color:#aaa;" id="riskDisplay">5%</div>
                 </div>
+                <div class="input-group half">
+                    <label>손절가 (%)</label>
+                    <input type="number" id="stopLoss" value="5">
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label>거래당 투입 비중: <span id="riskDisplay" style="color:#38ef7d">5%</span></label>
+                <input type="range" id="riskPerTrade" min="1" max="100" value="5">
+            </div>
 
+            <div class="action-buttons">
                 <button id="runBtn" class="btn-primary">
-                    <i class="fas fa-rocket"></i> 시뮬레이션 시작
+                    <i class="fas fa-play"></i> 시뮬레이션 시작
                 </button>
                 <button id="resetBtn" class="btn-secondary">
                     <i class="fas fa-redo"></i> 초기화
                 </button>
-            </aside>
+            </div>
+        </div>
 
-            <main class="result-panel">
-                <div class="chart-box">
-                    <canvas id="priceChart"></canvas>
+        <div class="result-card">
+            <div class="chart-area">
+                <canvas id="priceChart"></canvas>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span>최종 자산</span>
+                    <h3 id="finalBalance">$10,000</h3>
                 </div>
-
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <span>최종 자산</span>
-                        <h2 id="finalBalance">$10,000</h2>
-                    </div>
-                    <div class="metric-card">
-                        <span>총 수익률</span>
-                        <h2 id="totalReturn">0.00%</h2>
-                        <small id="returnPercent" style="color:#aaa">+0.00%</small>
-                    </div>
-                    <div class="metric-card">
-                        <span>승률</span>
-                        <h2 id="winRate">0.0%</h2>
-                    </div>
-                    <div class="metric-card">
-                        <span>최대 낙폭 (MDD)</span>
-                        <h2 id="maxDrawdown">0.00%</h2>
-                    </div>
+                <div class="stat-box">
+                    <span>수익률</span>
+                    <h3 id="totalReturn">0.00%</h3>
                 </div>
+                <div class="stat-box">
+                    <span>승률</span>
+                    <h3 id="winRate">0.0%</h3>
+                </div>
+                <div class="stat-box">
+                    <span>MDD</span>
+                    <h3 id="maxDrawdown">0.00%</h3>
+                </div>
+            </div>
 
-                <div class="trades-container">
-                    <div class="trades-header">
-                        <h3>매매 기록</h3>
-                        <div class="filters">
-                            <button class="filter-btn active" data-filter="all">전체</button>
-                            <button class="filter-btn" data-filter="buy">매수</button>
-                            <button class="filter-btn" data-filter="sell">매도</button>
-                        </div>
-                    </div>
-                    <div id="tradesList" class="trades-list">
-                        <div style="padding:20px; text-align:center; color:#555;">시뮬레이션을 시작해주세요.</div>
+            <div class="trades-area">
+                <div class="trades-header">
+                    <h4>매매 기록</h4>
+                    <div class="filter-tabs">
+                        <button class="tab active" data-filter="all">전체</button>
+                        <button class="tab" data-filter="buy">매수</button>
+                        <button class="tab" data-filter="sell">매도</button>
                     </div>
                 </div>
-            </main>
+                <div id="tradesList" class="trades-list">
+                    <div class="empty-msg">시뮬레이션을 시작해주세요.</div>
+                </div>
+            </div>
         </div>
     </div>
-    
+
     <div id="loadingOverlay" class="loading-overlay hidden">
         <div class="spinner"></div>
-        <p id="loadingText">데이터 분석 중...</p>
+        <p id="loadingText">데이터 수집 중...</p>
     </div>
 
     <div id="toast" class="toast"></div>
-
     <script src="simulator.js"></script>
 </body>
 </html>
